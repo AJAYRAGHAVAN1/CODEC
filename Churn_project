@@ -1,0 +1,54 @@
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
+from imblearn.over_sampling import SMOTE
+
+df = pd.read_csv("C:/Users/ajayr/OneDrive/Documents/DataSets/Churn.csv")
+df.drop('customerID', axis=1, inplace=True)
+df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce')
+df.dropna(inplace=True)
+df = pd.get_dummies(df, drop_first=True)
+
+X = df.drop('Churn_Yes', axis=1)
+y = df['Churn_Yes']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+sm = SMOTE(random_state=42)
+X_train_resampled, y_train_resampled = sm.fit_resample(X_train, y_train)
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train_resampled)
+X_test_scaled = scaler.transform(X_test)
+
+lr = LogisticRegression(max_iter=1000)
+lr.fit(X_train_scaled, y_train_resampled)
+y_pred_lr = lr.predict(X_test_scaled)
+
+print(" Logistic Regression Report:")
+print(classification_report(y_test, y_pred_lr))
+
+dt = DecisionTreeClassifier(random_state=42)
+dt.fit(X_train_resampled, y_train_resampled)
+y_pred_dt = dt.predict(X_test)
+
+print("Decision Tree Report:")
+print(classification_report(y_test, y_pred_dt))
+
+cm_lr = confusion_matrix(y_test, y_pred_lr)
+disp_lr = ConfusionMatrixDisplay(confusion_matrix=cm_lr, display_labels=["No Churn", "Churn"])
+disp_lr.plot(cmap='Blues')
+plt.title("Confusion Matrix - Logistic Regression")
+plt.show()
+
+cm_dt = confusion_matrix(y_test, y_pred_dt)
+disp_dt = ConfusionMatrixDisplay(confusion_matrix=cm_dt, display_labels=["No Churn", "Churn"])
+disp_dt.plot(cmap='Greens')
+plt.title("Confusion Matrix - Decision Tree")
+plt.show()
